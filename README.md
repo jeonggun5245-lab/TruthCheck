@@ -1,69 +1,79 @@
-# TruthCheck AI — Manual AI / No API prototype
+# TruthCheck AI v2 — Local AI edition
 
-이 버전은 OpenAI API 등 유료 AI API를 호출하지 않습니다. 외부 무료 AI 웹사이트를 별도 탭에서 이용한 다음, 분석 결과를 앱에 붙여 넣는 방식입니다.
+This version runs an open-weight language model on the user's own Windows PC through Ollama. It does **not** use a paid AI API and does not ask the user to copy prompts into a separate AI website.
 
-## 1. 설치
+## What it does
 
-Python 3.10 이상을 권장합니다.
+1. Accepts a news URL or pasted article text.
+2. Extracts the article text (some paywalled or protected pages may fail).
+3. Sends the article to a local Ollama model to extract factual claims and search phrases.
+4. Searches recent related news through the public GDELT DOC 2.0 endpoint (no API key).
+5. Fetches accessible source articles and asks the local model to compare the claims with the retrieved material.
+6. Displays claim-level assessments, source links, reliability and validity/balance rubrics, tone/bias signals, and corporate/audience impact notes.
+7. Exports a Markdown report.
 
-```bash
-python -m venv .venv
-```
+## Requirements
 
-Windows:
-```bash
-.venv\Scripts\activate
-```
+- Windows 10 version 22H2 or later (Ollama's current Windows requirement).
+- A PC with enough RAM and free storage for a local model. The recommended `qwen3:4b` model download is about 2.6 GB; it needs additional memory while running. If your PC is slow or runs out of memory, use a smaller model such as `qwen3:1.7b` (analysis quality may be lower).
+- Internet connection for article extraction and GDELT news search.
+- Python 3.10 or later.
 
-macOS / Linux:
-```bash
-source .venv/bin/activate
-```
+## Setup (Windows PC)
 
-의존성 설치:
-```bash
-pip install -r requirements.txt
-```
+1. Install Ollama: https://ollama.com/download/windows
+2. Open PowerShell or Command Prompt and download the model:
 
-## 2. 실행
+   ```powershell
+   ollama pull qwen3:4b
+   ```
 
-```bash
-streamlit run app.py
-```
+3. Download/unzip this project to a folder.
+4. Open PowerShell in that folder and install dependencies:
 
-브라우저에서 Streamlit이 안내하는 주소를 열면 됩니다. iPad에서 사용하려면 같은 네트워크의 컴퓨터에서 앱을 실행하고, Streamlit이 표시하는 네트워크 주소로 접속하는 방식이 필요할 수 있습니다. Streamlit Community Cloud 배포 시 GitHub 저장소 루트에 `app.py`, `core.py`, `requirements.txt`를 올립니다.
+   ```powershell
+   py -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+   pip install -r requirements.txt
+   ```
 
-## 3. 사용 순서
+5. Start the app:
 
-1. 기사 URL 또는 기사 본문을 입력하고 `기사 불러오기`를 누릅니다.
-2. 만들어진 분석 프롬프트를 복사해 ChatGPT, Gemini, Perplexity 등 무료 웹 AI 서비스 중 하나에 붙여 넣습니다.
-3. AI가 생성한 답변을 `외부 AI의 분석 결과` 칸에 붙여 넣습니다.
-4. 주요 주장을 표에 정리하고, 각 주장과 근거 원문을 확인합니다.
-5. 신뢰성·타당성 평가 항목과 어조·편향 항목을 직접 기록합니다.
-6. 기업 관련 기사라면 선택적으로 경제적 영향 분석을 기록합니다.
-7. Markdown 보고서를 다운로드합니다.
+   ```powershell
+   streamlit run app.py
+   ```
 
-## 4. 평가 점수 해석
+6. Open the local address shown by Streamlit, usually `http://localhost:8501`.
 
-- `충분히 확인됨` = 1.0
-- `일부 확인됨` = 0.5
-- `확인되지 않거나 기준 미충족` = 0.0
-- `평가 불가` = 점수 계산에서 제외
-- 평가 가능한 항목이 3개 미만이면 점수는 `평가 보류`입니다.
-- 5점 만점 점수는 기사의 진실일 확률이 아니라, 정의한 평가 기준에 따른 점검 지수입니다.
+Ollama runs locally at `http://127.0.0.1:11434`. Keep Ollama running while TruthCheck is in use.
 
-## 5. 제한 사항
+## Open the app on an iPad (same Wi-Fi only)
 
-- API 키 및 API 사용료가 필요하지 않습니다.
-- 외부 AI를 앱 안에서 자동 호출하지 않습니다. 프롬프트 복사 및 결과 붙여넣기가 필요합니다.
-- URL 본문 추출은 유료벽, 로그인, 봇 차단, 동적 페이지 등에 따라 실패할 수 있습니다. 실패하면 기사 본문을 직접 붙여 넣으세요.
-- AI가 제시한 근거 URL과 수치가 실제로 존재하고 내용을 뒷받침하는지 원문에서 확인해야 합니다.
-- 주가·시가총액 변화와 재무제표상 손실을 구분하세요. 주가 변동만으로 기사가 경제적 피해의 원인이라고 단정하지 마세요.
-- 이 도구는 투자·법률 자문이나 자동적인 진위 판정 도구가 아닙니다.
+The AI model remains on the Windows PC; the iPad only displays the Streamlit page.
 
-## 파일 구성
+1. Keep the PC and iPad on the same trusted Wi-Fi network.
+2. In PowerShell, start Streamlit with:
 
-- `app.py`: Streamlit 사용자 화면
-- `core.py`: 평가 기준, 점수 계산, 프롬프트 및 보고서 생성
-- `requirements.txt`: 설치 패키지
-- `tests/test_core.py`: 점수 계산 및 URL 유효성 기본 테스트
+   ```powershell
+   streamlit run app.py --server.address 0.0.0.0
+   ```
+
+3. Find the PC's local IPv4 address using `ipconfig` (for example `192.168.0.25`).
+4. On the iPad, open `http://192.168.0.25:8501` using the actual PC address.
+5. Keep the PC and its Ollama service running. Do not expose the port to the public internet or set up router port forwarding.
+
+If Windows Firewall asks whether Python may communicate on a private network, only allow it on a trusted private network and follow the device owner's guidance.
+
+## Important limits
+
+- This version runs locally; it cannot run the local model inside Streamlit Community Cloud. The previous `ManualAI` version is not the intended deployment for this design.
+- GDELT DOC 2.0 searches recent news coverage (the query here uses a rolling 3-month window). Older historical claims may not yield sources.
+- GDELT provides news discovery, not a complete database of official filings, court decisions, or scientific papers. A retrieved news article is not automatically a primary source.
+- A different domain does not prove independent reporting. Syndicated or copied stories may share the same underlying source.
+- If evidence cannot be retrieved, the system must show insufficient evidence or evaluation hold rather than invent support.
+- Local language models can hallucinate or misread sources. Verify important claims against original documents and official disclosures.
+- Scores are rubric-based review indices, not probabilities that an article is true and not investment advice.
+
+## GDELT attribution
+
+News search uses the GDELT Project DOC 2.0. Please cite and link to https://www.gdeltproject.org/ when describing or redistributing GDELT-derived data.

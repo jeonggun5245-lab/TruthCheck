@@ -1,29 +1,27 @@
-import unittest
-from core import calculate_score, validate_http_url
+from core import score_index, SCORE_KEYS, VALIDITY_KEYS, parse_json_response, clamp_score_map, clean_source_ids
 
-class ScoreTests(unittest.TestCase):
-    def test_all_full(self):
-        result = calculate_score(["충분히 확인됨"] * 5)
-        self.assertEqual(result["score"], 5.0)
-        self.assertEqual(result["status"], "평가 완료")
 
-    def test_partial_and_zero(self):
-        result = calculate_score(["충분히 확인됨", "일부 확인됨", "확인되지 않거나 기준 미충족", "평가 불가", "평가 불가"])
-        self.assertEqual(result["score"], 2.5)
-        self.assertEqual(result["evaluated"], 3)
+def test_score_index():
+    result = score_index({k: 1.0 for k in SCORE_KEYS}, SCORE_KEYS)
+    assert result["score"] == 5.0
+    assert result["evaluated"] == 5
 
-    def test_too_few_evaluable(self):
-        result = calculate_score(["평가 불가", "충분히 확인됨", "평가 불가", "평가 불가", "충분히 확인됨"])
-        self.assertIsNone(result["score"])
-        self.assertEqual(result["status"], "평가 보류")
 
-    def test_localhost_rejected(self):
-        ok, _ = validate_http_url("http://localhost:8501")
-        self.assertFalse(ok)
+def test_score_index_holds_with_too_few():
+    result = score_index({"logic": 1.0, "headline_match": 0.5}, VALIDITY_KEYS)
+    assert result["score"] is None
+    assert result["status"] == "평가 보류"
 
-    def test_https_accepted(self):
-        ok, _ = validate_http_url("https://example.com/article")
-        self.assertTrue(ok)
 
-if __name__ == "__main__":
-    unittest.main()
+def test_parse_json_with_fence():
+    assert parse_json_response('```json\n{"ok": true}\n```')["ok"] is True
+
+
+def test_clamp_score_map():
+    cleaned = clamp_score_map({"logic": 3, "context": 0.5}, VALIDITY_KEYS)
+    assert cleaned["logic"] is None
+    assert cleaned["context"] == 0.5
+
+
+def test_source_id_filter():
+    assert clean_source_ids(["S1", "S9", "http://fake"], {"S1", "S2"}) == ["S1"]
